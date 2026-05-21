@@ -1,0 +1,6 @@
+{
+  "name": "lgxai",
+  "description": "An advanced AI agent application for chatting and managing LLM tools.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
