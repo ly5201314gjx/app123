@@ -2,6 +2,8 @@ package com.example.service
 
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.Dispatchers
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -18,7 +20,7 @@ class OpenAIChatClient(
         baseUrl: String,
         apiKey: String,
         model: String,
-        prompt: String,
+        allMessages: List<com.example.data.MessageEntity>,
         temperature: Float = 0.7f,
         maxTokens: Int? = null,
         systemPrompt: String? = null
@@ -27,7 +29,9 @@ class OpenAIChatClient(
         if (systemPrompt != null) {
             messages.put(JSONObject().put("role", "system").put("content", systemPrompt))
         }
-        messages.put(JSONObject().put("role", "user").put("content", prompt))
+        for (msg in allMessages) {
+            messages.put(JSONObject().put("role", msg.role).put("content", msg.content))
+        }
 
         val requestBodyJson = JSONObject().apply {
             put("model", model)
@@ -68,13 +72,13 @@ class OpenAIChatClient(
                 }
             }
         }
-    }
+    }.flowOn(Dispatchers.IO)
 
     suspend fun chatBlock(
         baseUrl: String,
         apiKey: String,
         model: String,
-        prompt: String,
+        allMessages: List<com.example.data.MessageEntity>,
         temperature: Float = 0.7f,
         maxTokens: Int? = null,
         systemPrompt: String? = null
@@ -84,7 +88,9 @@ class OpenAIChatClient(
             if (systemPrompt != null) {
                 messages.put(JSONObject().put("role", "system").put("content", systemPrompt))
             }
-            messages.put(JSONObject().put("role", "user").put("content", prompt))
+            for (msg in allMessages) {
+                messages.put(JSONObject().put("role", msg.role).put("content", msg.content))
+            }
 
             val requestBodyJson = JSONObject().apply {
                 put("model", model)

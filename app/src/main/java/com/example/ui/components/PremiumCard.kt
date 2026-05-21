@@ -27,21 +27,21 @@ fun PremiumCard(
     Surface(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 8.dp)
+            .padding(vertical = 6.dp)
             .clickable { onClick() },
         color = PremiumSurface,
-        shape = RoundedCornerShape(24.dp),
-        shadowElevation = 4.dp
+        shape = RoundedCornerShape(16.dp),
+        shadowElevation = 2.dp
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(24.dp),
+                .padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Box(
                 modifier = Modifier
-                    .size(52.dp)
+                    .size(40.dp)
                     .clip(CircleShape)
                     .background(PremiumHighlight),
                 contentAlignment = Alignment.Center
@@ -50,22 +50,22 @@ fun PremiumCard(
                     imageVector = icon,
                     contentDescription = title,
                     tint = PremiumPrimary,
-                    modifier = Modifier.size(24.dp)
+                    modifier = Modifier.size(20.dp)
                 )
             }
-            Spacer(modifier = Modifier.width(20.dp))
+            Spacer(modifier = Modifier.width(16.dp))
             Column {
                 Text(
                     text = title,
                     fontWeight = FontWeight.Bold,
-                    fontSize = 16.sp,
+                    fontSize = 15.sp,
                     color = PremiumTextPrimary
                 )
                 Text(
                     text = subtitle,
-                    fontSize = 13.sp,
+                    fontSize = 12.sp,
                     color = PremiumTextSecondary,
-                    modifier = Modifier.padding(top = 4.dp)
+                    modifier = Modifier.padding(top = 2.dp)
                 )
             }
         }

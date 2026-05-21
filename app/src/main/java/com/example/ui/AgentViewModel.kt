@@ -19,7 +19,7 @@ class AgentViewModel(application: Application) : AndroidViewModel(application) {
     private val db = Room.databaseBuilder(
         application.applicationContext,
         AppDatabase::class.java, "lgxai-db"
-    ).build()
+    ).fallbackToDestructiveMigration().build()
 
     private val chatClient = OpenAIChatClient()
 
@@ -27,18 +27,44 @@ class AgentViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList()
     )
 
-    val settings = db.settingsDao().getSettingsFlow().stateIn(
-        viewModelScope, SharingStarted.WhileSubscribed(5000), null
+    val allSettings = db.settingsDao().getAllSettingsFlow().stateIn(
+        viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList()
     )
+
+    private val _activeSettingsId = MutableStateFlow<Int?>(null)
+    val activeSettingsId: StateFlow<Int?> = _activeSettingsId.asStateFlow()
 
     private val _isGenerating = MutableStateFlow(false)
     val isGenerating: StateFlow<Boolean> = _isGenerating.asStateFlow()
 
     init {
-        // Initialize default settings if null
         viewModelScope.launch {
-            if (db.settingsDao().getSettings() == null) {
-                db.settingsDao().saveSettings(SettingsEntity())
+            if (db.settingsDao().getFirstSettings() == null) {
+                val defaultSettings = SettingsEntity(modelNameDisplay = "GPT-4o")
+                db.settingsDao().saveSettings(defaultSettings)
+            }
+            db.settingsDao().getAllSettingsFlow().collect { list ->
+                if (list.isNotEmpty() && _activeSettingsId.value == null) {
+                    _activeSettingsId.value = list.first().id
+                }
+            }
+        }
+    }
+
+    fun setActiveSettingsId(id: Int) {
+        _activeSettingsId.value = id
+    }
+
+    fun deleteSettings(settings: SettingsEntity) {
+        viewModelScope.launch {
+            db.settingsDao().deleteSettings(settings)
+            val list = db.settingsDao().getFirstSettings()
+            if (list != null) {
+                if (_activeSettingsId.value == settings.id) {
+                    _activeSettingsId.value = list.id
+                }
+            } else {
+                _activeSettingsId.value = null
             }
         }
     }
@@ -63,32 +89,33 @@ class AgentViewModel(application: Application) : AndroidViewModel(application) {
             val userMsg = MessageEntity(role = "user", content = prompt)
             db.messageDao().insertMessage(userMsg)
 
-            val currentSettings = settings.value ?: SettingsEntity()
+            val currentSettings = allSettings.value.find { it.id == _activeSettingsId.value } ?: allSettings.value.firstOrNull() ?: SettingsEntity()
             
             // Build system prompt and context if memoryLength > 0
-            val recentMessages = db.messageDao().getAllMessages()
-                // ... fetch recent for context (ignoring brevity here, simplify for now)
+            val allMsg = allMessages.value
+            val recentMessages = if (currentSettings.memoryLength > 0) {
+                // allMsg might not contain the message we just inserted, since it's a flow and might not have emitted yet. 
+                // So we append the userMsg directly if it's not present.
+                val contextList = allMsg.toMutableList()
+                contextList.add(userMsg)
+                contextList.takeLast(currentSettings.memoryLength)
+            } else {
+                listOf(userMsg)
+            }
 
-            val assistantMsg = MessageEntity(role = "assistant", content = "")
-            // For simplicity with Room, we insert it first then update, but since Room auto-generates ID, we need its ID to update.
-            // Actually, we can just keep state in a temporary flow, but let's insert a placeholder.
-            // A better way is to collect stream in UI or update DB in chunks.
             var streamContent = ""
-            val tempDisplayMsgId = System.currentTimeMillis().toInt()
             
             try {
                 if (currentSettings.isStreamResponse) {
-                    // Update a local state first or write to DB
                     chatClient.chatStream(
                         baseUrl = currentSettings.baseUrl,
                         apiKey = currentSettings.apiKey,
                         model = currentSettings.activeModel,
-                        prompt = prompt,
+                        allMessages = recentMessages,
                         temperature = currentSettings.temperature,
                         maxTokens = currentSettings.maxTokens.takeIf { it > 0 }
                     ).collect { chunk ->
                         streamContent += chunk
-                        // Let's emit to UI via a temp state and save at the end to avoid heavy DB writes
                         _streamingMessage.value = streamContent
                     }
                     db.messageDao().insertMessage(MessageEntity(role = "assistant", content = streamContent))
@@ -98,7 +125,7 @@ class AgentViewModel(application: Application) : AndroidViewModel(application) {
                         baseUrl = currentSettings.baseUrl,
                         apiKey = currentSettings.apiKey,
                         model = currentSettings.activeModel,
-                        prompt = prompt,
+                        allMessages = recentMessages,
                         temperature = currentSettings.temperature,
                         maxTokens = currentSettings.maxTokens.takeIf { it > 0 }
                     )
