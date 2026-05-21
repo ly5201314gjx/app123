@@ -8,6 +8,9 @@ import com.example.data.AppDatabase
 import com.example.data.MessageEntity
 import com.example.data.SettingsEntity
 import com.example.service.OpenAIChatClient
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -20,6 +23,8 @@ class AgentViewModel(application: Application) : AndroidViewModel(application) {
         application.applicationContext,
         AppDatabase::class.java, "lgxai-db"
     ).fallbackToDestructiveMigration().build()
+
+    var isBottomBarVisible by mutableStateOf(false)
 
     private val chatClient = OpenAIChatClient()
 
@@ -106,6 +111,27 @@ class AgentViewModel(application: Application) : AndroidViewModel(application) {
             var streamContent = ""
             
             try {
+                val toolDefinitions = com.example.ui.screens.coreAgentTools.joinToString("\n") { "- ${it.id}: ${it.description}" }
+                val systemPrompt = """
+                    You are a highly capable intelligent agent executing a continuous ReAct loop architecture.
+                    You have access to the following autonomous tools:
+                    $toolDefinitions
+                    
+                    When processing user requests, adhere strictly to this structural protocol:
+                    
+                    1. THOUGHT PROCESS: 
+                       Always construct a step-by-step evaluation inside <think> ... </think> tags before acting.
+                       Break down the request, define dependencies, and evaluate tool requirements.
+                       
+                    2. TOOL CHAIN INVOCATION:
+                       To trigger a tool, you MUST emit exactly:
+                       <tool_call name="tool_id">json_arguments_here</tool_call>
+                       (Stop generating and wait for the system to inject tool execution results).
+                       
+                    3. FINAL RESPONSE:
+                       Once all tools resolve and information is gathered, synthesize your final response outside the <think> tags.
+                """.trimIndent()
+
                 if (currentSettings.isStreamResponse) {
                     chatClient.chatStream(
                         baseUrl = currentSettings.baseUrl,
@@ -113,7 +139,8 @@ class AgentViewModel(application: Application) : AndroidViewModel(application) {
                         model = currentSettings.activeModel,
                         allMessages = recentMessages,
                         temperature = currentSettings.temperature,
-                        maxTokens = currentSettings.maxTokens.takeIf { it > 0 }
+                        maxTokens = currentSettings.maxTokens.takeIf { it > 0 },
+                        systemPrompt = systemPrompt
                     ).collect { chunk ->
                         streamContent += chunk
                         _streamingMessage.value = streamContent
@@ -127,7 +154,8 @@ class AgentViewModel(application: Application) : AndroidViewModel(application) {
                         model = currentSettings.activeModel,
                         allMessages = recentMessages,
                         temperature = currentSettings.temperature,
-                        maxTokens = currentSettings.maxTokens.takeIf { it > 0 }
+                        maxTokens = currentSettings.maxTokens.takeIf { it > 0 },
+                        systemPrompt = systemPrompt
                     )
                     db.messageDao().insertMessage(MessageEntity(role = "assistant", content = res))
                 }

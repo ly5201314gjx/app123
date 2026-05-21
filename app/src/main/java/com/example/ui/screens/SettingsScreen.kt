@@ -21,7 +21,7 @@ import com.example.ui.components.PremiumCard
 import com.example.ui.theme.*
 
 @Composable
-fun SettingsScreen(insetsPadding: PaddingValues) {
+fun SettingsScreen(insetsPadding: PaddingValues, onNavigateToTools: () -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -53,7 +53,8 @@ fun SettingsScreen(insetsPadding: PaddingValues) {
             PremiumCard(
                 title = "工具链管理",
                 subtitle = "配置与桥接外部执行工具",
-                icon = Icons.Default.Build
+                icon = Icons.Default.Build,
+                onClick = onNavigateToTools
             )
             PremiumCard(
                 title = "MCP 控制规范",

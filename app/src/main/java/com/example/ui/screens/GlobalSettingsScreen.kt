@@ -112,7 +112,29 @@ fun GlobalSettingsScreen(paddingValues: PaddingValues) {
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // Section 2: Bubble Settings
+            // Section 2: UI Preferences
+            Text("交互偏好", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = PremiumPrimary)
+            Spacer(modifier = Modifier.height(8.dp))
+            Surface(shape = MaterialTheme.shapes.large, color = PremiumSurface, shadowElevation = 2.dp) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text("默认折叠思考过程 (Think)", color = PremiumTextPrimary, fontSize = 14.sp)
+                        Switch(
+                            checked = settings.collapseThink,
+                            onCheckedChange = { isChecked -> scope.launch { GlobalSettings.updateSettings(context) { this[GlobalSettings.COLLAPSE_THINK] = isChecked } } },
+                            colors = SwitchDefaults.colors(checkedThumbColor = androidx.compose.ui.graphics.Color.White, checkedTrackColor = PremiumPrimary, uncheckedTrackColor = PremiumBorder, uncheckedThumbColor = PremiumTextSecondary)
+                        )
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // Section 3: Bubble Settings
             Text("聊天气泡风格", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = PremiumPrimary)
             Spacer(modifier = Modifier.height(8.dp))
             Surface(shape = MaterialTheme.shapes.large, color = PremiumSurface, shadowElevation = 2.dp) {

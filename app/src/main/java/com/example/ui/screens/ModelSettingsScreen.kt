@@ -35,18 +35,7 @@ fun ModelSettingsScreen(viewModel: AgentViewModel, insetsPadding: PaddingValues)
     val scope = rememberCoroutineScope()
 
     Scaffold(
-        containerColor = PremiumBg,
-        floatingActionButton = {
-            FloatingActionButton(
-                onClick = {
-                    viewModel.saveSettings(SettingsEntity(modelNameDisplay = "New Model"))
-                },
-                containerColor = PremiumPrimary,
-                contentColor = Color.White
-            ) {
-                Icon(Icons.Default.Add, contentDescription = "Add Model")
-            }
-        }
+        containerColor = PremiumBg
     ) { innerPaddingScaffold ->
         Column(
             modifier = Modifier
@@ -61,12 +50,27 @@ fun ModelSettingsScreen(viewModel: AgentViewModel, insetsPadding: PaddingValues)
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "Engine Matrix",
+                    text = "模型矩阵",
                     fontWeight = FontWeight.ExtraBold,
-                    fontSize = 28.sp,
+                    fontSize = 26.sp,
                     letterSpacing = 1.sp,
                     color = PremiumTextPrimary
                 )
+                
+                Surface(
+                    shape = RoundedCornerShape(16.dp),
+                    color = PremiumHighlight,
+                    onClick = { viewModel.saveSettings(SettingsEntity(modelNameDisplay = "新模型")) }
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(Icons.Default.Add, contentDescription = "Add", tint = PremiumPrimary, modifier = Modifier.size(16.dp))
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("添加模型", color = PremiumPrimary, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                    }
+                }
             }
 
             val groupedSettings = allSettings.groupBy { it.groupName }
@@ -140,15 +144,15 @@ fun ModelAccordionItem(
                     }
                     Column {
                         Text(
-                            text = modelNameDisplay.ifBlank { "Unnamed Engine" },
+                            text = modelNameDisplay.ifBlank { "未命名核心" },
                             fontWeight = FontWeight.Bold,
                             fontSize = 18.sp,
                             color = PremiumTextPrimary
                         )
                         if (isActive) {
-                            Text("● Active Runtime", color = PremiumPrimary, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                            Text("● 活跃运行中", color = PremiumPrimary, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
                         } else {
-                            Text("Inactive", color = PremiumTextSecondary, fontSize = 12.sp)
+                            Text("待机状态", color = PremiumTextSecondary, fontSize = 12.sp)
                         }
                     }
                 }
@@ -156,12 +160,12 @@ fun ModelAccordionItem(
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     if (!isActive) {
                         TextButton(onClick = onActivate) {
-                            Text("Activate", color = PremiumPrimary, fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                            Text("激活", color = PremiumPrimary, fontSize = 13.sp, fontWeight = FontWeight.Bold)
                         }
                     }
                     Icon(
                         imageVector = if (isExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
-                        contentDescription = "Expand",
+                        contentDescription = "展开",
                         tint = PremiumTextSecondary
                     )
                 }
@@ -176,24 +180,24 @@ fun ModelAccordionItem(
                 ) {
                     HorizontalDivider(color = PremiumBorder, thickness = 1.dp, modifier = Modifier.padding(bottom = 16.dp))
 
-                    CompactTextField(label = "Group Name", value = groupName, onValueChange = { groupName = it })
-                    CompactTextField(label = "Display Name", value = modelNameDisplay, onValueChange = { modelNameDisplay = it })
-                    CompactTextField(label = "Engine Source (Model ID)", value = activeModel, onValueChange = { activeModel = it })
-                    CompactTextField(label = "Base URL", value = baseUrl, onValueChange = { baseUrl = it })
-                    CompactTextField(label = "API Key", value = apiKey, onValueChange = { apiKey = it }, isPassword = true)
+                    CompactTextField(label = "分组归属", value = groupName, onValueChange = { groupName = it })
+                    CompactTextField(label = "核心名称 (Display Name)", value = modelNameDisplay, onValueChange = { modelNameDisplay = it })
+                    CompactTextField(label = "模型标识 (Model ID)", value = activeModel, onValueChange = { activeModel = it })
+                    CompactTextField(label = "接口地址 (Base URL)", value = baseUrl, onValueChange = { baseUrl = it })
+                    CompactTextField(label = "认证密钥 (API Key)", value = apiKey, onValueChange = { apiKey = it }, isPassword = true)
 
                     Spacer(modifier = Modifier.height(16.dp))
 
-                    CompactSliderRow(label = "Temperature", value = temperature, range = 0f..2f, onValueChange = { temperature = it })
-                    CompactSliderRow(label = "Context Limits (Tokens)", value = maxTokens.toFloat(), range = 100f..32000f, onValueChange = { maxTokens = it.toInt() }, displayValue = maxTokens.toString())
-                    CompactSliderRow(label = "Memory Depth (Turns)", value = memoryLength.toFloat(), range = 0f..100f, onValueChange = { memoryLength = it.toInt() }, displayValue = memoryLength.toString())
+                    CompactSliderRow(label = "自由度 (Temperature)", value = temperature, range = 0f..2f, onValueChange = { temperature = it })
+                    CompactSliderRow(label = "上下文阈值 (Max Tokens)", value = maxTokens.toFloat(), range = 100f..32000f, onValueChange = { maxTokens = it.toInt() }, displayValue = maxTokens.toString())
+                    CompactSliderRow(label = "记忆深度 (Memory Length)", value = memoryLength.toFloat(), range = 0f..100f, onValueChange = { memoryLength = it.toInt() }, displayValue = memoryLength.toString())
 
                     Row(
                         modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text("Streaming Render", color = PremiumTextPrimary, fontSize = 14.sp)
+                        Text("流式渲染 (Streaming)", color = PremiumTextPrimary, fontSize = 14.sp)
                         Switch(
                             checked = isStreamResponse,
                             onCheckedChange = { isStreamResponse = it },
@@ -207,7 +211,7 @@ fun ModelAccordionItem(
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
                         IconButton(onClick = onDelete) {
-                            Icon(Icons.Default.Delete, contentDescription = "Delete", tint = MaterialTheme.colorScheme.error)
+                            Icon(Icons.Default.Delete, contentDescription = "删除", tint = MaterialTheme.colorScheme.error)
                         }
                         
                         Button(
@@ -231,7 +235,7 @@ fun ModelAccordionItem(
                             shape = RoundedCornerShape(12.dp),
                             contentPadding = PaddingValues(horizontal = 24.dp, vertical = 8.dp)
                         ) {
-                            Text("Apply", color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                            Text("应用配置", color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Bold)
                         }
                     }
                 }

@@ -17,6 +17,7 @@ object GlobalSettings {
     val BUBBLE_IMAGE_URI = stringPreferencesKey("bubble_image_uri")
     val BUBBLE_ALPHA = floatPreferencesKey("bubble_alpha")
     val BUBBLE_TEXT_COLOR = longPreferencesKey("bubble_text_color") // Storing as Long for Color value
+    val COLLAPSE_THINK = booleanPreferencesKey("collapse_think")
 
     fun getSettings(context: Context): Flow<AppThemeSettings> {
         return context.dataStore.data.map { prefs ->
@@ -27,7 +28,8 @@ object GlobalSettings {
                 bubbleStyle = prefs[BUBBLE_STYLE] ?: "glass",
                 bubbleImageUri = prefs[BUBBLE_IMAGE_URI],
                 bubbleAlpha = prefs[BUBBLE_ALPHA] ?: 1.0f,
-                bubbleTextColor = prefs[BUBBLE_TEXT_COLOR] ?: 0xFFFFFFFFL // Default white
+                bubbleTextColor = prefs[BUBBLE_TEXT_COLOR] ?: 0xFFFFFFFFL, // Default white
+                collapseThink = prefs[COLLAPSE_THINK] ?: true
             )
         }
     }
@@ -44,5 +46,6 @@ data class AppThemeSettings(
     val bubbleStyle: String = "glass", // "glass", "plain", "custom_image"
     val bubbleImageUri: String? = null,
     val bubbleAlpha: Float = 1.0f,
-    val bubbleTextColor: Long = 0xFFFFFFFFL
+    val bubbleTextColor: Long = 0xFFFFFFFFL,
+    val collapseThink: Boolean = true
 )

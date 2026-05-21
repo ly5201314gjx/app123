@@ -62,10 +62,8 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun MainApp(viewModel: AgentViewModel) {
     val navController = rememberNavController()
-    var isBottomBarVisible by remember { mutableStateOf(false) }
-
     val bottomBarHeight by animateDpAsState(
-        targetValue = if (isBottomBarVisible) 100.dp else 0.dp,
+        targetValue = if (viewModel.isBottomBarVisible) 100.dp else 0.dp,
         animationSpec = tween(300),
         label = "bottomBarHeight"
     )
@@ -113,14 +111,12 @@ fun MainApp(viewModel: AgentViewModel) {
             }
         }
     ) {
-        val nestedScrollConnection = remember {
-            object : androidx.compose.ui.input.nestedscroll.NestedScrollConnection {
-                override fun onPreScroll(available: Offset, source: androidx.compose.ui.input.nestedscroll.NestedScrollSource): Offset {
-                    if (available.y < -5f && !isBottomBarVisible) {
-                        isBottomBarVisible = true
-                    }
-                    return Offset.Zero
-                }
+        val navBackStackEntry by navController.currentBackStackEntryAsState()
+        val currentDestination = navBackStackEntry?.destination
+
+        LaunchedEffect(currentDestination?.route) {
+            if (currentDestination?.route != "chat") {
+                viewModel.isBottomBarVisible = true
             }
         }
 
@@ -128,7 +124,6 @@ fun MainApp(viewModel: AgentViewModel) {
             modifier = Modifier
                 .fillMaxSize()
                 .background(PremiumBg)
-                .nestedScroll(nestedScrollConnection)
         ) {
             NavHost(
                 navController = navController,
@@ -136,7 +131,12 @@ fun MainApp(viewModel: AgentViewModel) {
                 modifier = Modifier.fillMaxSize()
             ) {
                 composable("chat") { ChatScreen(viewModel, PaddingValues(bottom = bottomBarHeight)) }
-                composable("agent") { SettingsScreen(PaddingValues(bottom = bottomBarHeight)) }
+                composable("agent") {
+                    SettingsScreen(PaddingValues(bottom = bottomBarHeight), onNavigateToTools = {
+                        navController.navigate("tools")
+                    })
+                }
+                composable("tools") { com.example.ui.screens.ToolsManageScreen(PaddingValues(bottom = bottomBarHeight)) }
                 composable("model") { ModelSettingsScreen(viewModel, PaddingValues(bottom = bottomBarHeight)) }
                 composable("global_settings") { com.example.ui.screens.GlobalSettingsScreen(PaddingValues(bottom = bottomBarHeight)) }
                 composable("about") { com.example.ui.screens.AboutScreen(PaddingValues(bottom = bottomBarHeight)) }
@@ -144,11 +144,8 @@ fun MainApp(viewModel: AgentViewModel) {
 
             // Floating Bottom Bar
 
-        val navBackStackEntry by navController.currentBackStackEntryAsState()
-        val currentDestination = navBackStackEntry?.destination
-
         androidx.compose.animation.AnimatedVisibility(
-            visible = isBottomBarVisible,
+            visible = viewModel.isBottomBarVisible,
             enter = androidx.compose.animation.slideInVertically(initialOffsetY = { it }, animationSpec = tween(300)),
             exit = androidx.compose.animation.slideOutVertically(targetOffsetY = { it }, animationSpec = tween(300)),
             modifier = Modifier.align(Alignment.BottomCenter)
@@ -157,13 +154,6 @@ fun MainApp(viewModel: AgentViewModel) {
                 modifier = Modifier
                     .padding(bottom = 32.dp, start = 24.dp, end = 24.dp)
                     .windowInsetsPadding(WindowInsets.navigationBars)
-                    .pointerInput(Unit) {
-                        detectVerticalDragGestures { _, dragAmount ->
-                            if (dragAmount > 5f) {
-                                isBottomBarVisible = false
-                            }
-                        }
-                    }
             ) {
                 Surface(
                     shape = CircleShape,
